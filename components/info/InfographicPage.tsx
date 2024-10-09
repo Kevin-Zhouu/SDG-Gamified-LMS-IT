@@ -52,15 +52,17 @@ export const InfographicPage: React.FC<InfographicPageProps> = ({
       <div id="header-section">
         <HeaderSection {...headerData} />
       </div>
-      <TargetsSection {...targetsData} />
+      <div id="targets-section">
+        <TargetsSection {...targetsData} />
+      </div>
       {quizData && (
-        <div className="my-8">
+        <div id="quiz-section" className="my-8">
           <h2 className="text-2xl font-bold mb-4">{quizData.title}</h2>
           <QuizSection questions={quizData.questions} />
         </div>
       )}
       {gameData && (
-        <div className="my-8">
+        <div id="game-section" className="my-8">
           <ImageMatchingGame title={gameData.title} cardPairs={gameData.cardPairs} />
         </div>
       )}
