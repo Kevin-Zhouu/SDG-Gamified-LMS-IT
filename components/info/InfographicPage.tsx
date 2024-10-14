@@ -4,6 +4,7 @@ import { HeaderSection } from '@/components/info/header/HeaderSection';
 import { TargetsSection } from '@/components/info/target/TargetsSection';
 import { QuizSection } from '@/components/info/quiz/QuizSection';
 import { ImageMatchingGame } from '@/components/info/game/image-match/ImageMatchingGame';
+import CurrentGlobalSituation from '@/components/info/cgs/CurrentGlobalSituation';
 import { Target } from '@/types/infographics';
 
 interface QuizQuestion {
@@ -64,6 +65,7 @@ export const InfographicPage: React.FC<InfographicPageProps> = ({
           <ImageMatchingGame title={gameData.title} cardPairs={gameData.cardPairs} />
         </div>
       )}
+      <CurrentGlobalSituation />
       {ScrollComponent && <ScrollComponent targetSectionId="header-section" />}
     </div>
   );

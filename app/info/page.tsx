@@ -1,6 +1,6 @@
 import React from 'react';
 import { InfographicPage } from '@/components/info/InfographicPage';
-import { HeaderData, TargetsData } from '@/types/infographics';
+import { HeaderData, TargetsData, CgsData } from '@/types/infographics';
 import Image from 'next/image';
 import island from '@/public/island.svg';
 import WaterDropScroll from '@/components/info/sdg6/WaterDropScroll';
@@ -98,7 +98,6 @@ const quizData = {
     // ... add more questions as needed
   ],
 };
-
 
 const gameData = {
   title: "Match Water Sustainability Concepts",
