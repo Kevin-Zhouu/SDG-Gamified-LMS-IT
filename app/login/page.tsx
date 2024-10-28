@@ -51,7 +51,7 @@ export default function LoginPage({
   const signUp = async (formData: FormData) => {
     "use server";
  
-    const origin = headers().get("origin");
+    const origin = ((await headers()) as Headers).get("origin");
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const supabase = createClient();
@@ -85,7 +85,8 @@ export default function LoginPage({
 
   const signInWithGoogle = async () => {
     "use server";
-    const origin = headers().get("origin");
+
+    const origin = ((await headers()) as Headers).get("origin");
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -101,7 +102,7 @@ export default function LoginPage({
 
   const signInWithGithub = async () => {
     "use server";
-    const origin = headers().get("origin");
+    const origin = ((await headers()) as Headers).get("origin");
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "github",
