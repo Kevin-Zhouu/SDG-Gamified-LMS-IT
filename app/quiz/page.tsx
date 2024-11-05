@@ -103,17 +103,20 @@ const QuizPage = () => {
     <div className="max-w-4xl mx-auto px-6 py-10">
       {/* Top bar */}
       <div className="flex justify-between items-center mb-12">
-        <X className="w-6 h-6 text-gray-400" onClick={() => router.push("/")} />
+        <X 
+          className="w-6 h-6 text-subtler cursor-pointer hover:text-subtle" 
+          onClick={() => router.push("/")} 
+        />
         <div className="flex-grow mx-6">
-          <div className="bg-gray-200 h-3 rounded-full">
+          <div className="bg-surface h-3 rounded-full">
             <div
-              className="bg-blue-500 h-3 rounded-full"
+              className="bg-sdg-6 h-3 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
         </div>
         <div className="flex items-center">
-          <Settings className="w-6 h-6 text-gray-400 mr-4" />
+          <Settings className="w-6 h-6 text-subtler mr-4" />
           <Heart className="w-6 h-6 text-red-400" />
           <span className="ml-1 text-red-400">3</span>
         </div>
@@ -122,20 +125,20 @@ const QuizPage = () => {
       {/* Main content */}
       <div className="space-y-10">
         {/* Passage section */}
-        <div className="bg-blue-50 p-8 rounded-lg">
-          <h2 className="text-blue-700 uppercase text-sm font-semibold mb-4">
+        <div className="bg-surface p-8 rounded-lg">
+          <h2 className="text-sdg-6 uppercase caption font-semibold mb-4">
             WATER SUSTAINABILITY
           </h2>
-          <p className="text-base leading-relaxed">
+          <p className="leading-relaxed text-default">
             {questions[currentQuestion].question}
           </p>
         </div>
 
         {/* Quiz section */}
         <div>
-          <h2 className="text-xl font-semibold mb-6">
+          <h5 className="mb-6">
             Select the correct answer(s):
-          </h2>
+          </h5>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {questions[currentQuestion].options.map((option, index) => (
               <button
@@ -143,8 +146,8 @@ const QuizPage = () => {
                 onClick={() => handleAnswerSelect(option)}
                 className={`py-3 px-6 rounded-full text-center transition-colors ${
                   selectedAnswers.includes(option)
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100 text-gray-800 hover:bg-blue-100"
+                    ? "bg-sdg-6 text-white"
+                    : "bg-surface text-default hover:bg-blue-100"
                 }`}
               >
                 {option}
@@ -161,10 +164,10 @@ const QuizPage = () => {
         <div className="text-right">
           <button
             onClick={handleNext}
-            className={`px-8 py-3 rounded-full text-lg font-medium transition-colors ${
+            className={`btn ${
               isAnswered
-                ? "bg-blue-500 text-white hover:bg-blue-600"
-                : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                ? "btn-primary"
+                : "bg-surface text-subtler cursor-not-allowed"
             }`}
             disabled={!isAnswered}
           >
@@ -174,9 +177,9 @@ const QuizPage = () => {
 
         {showCongrats && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-            <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-              <h2 className="text-2xl font-bold mb-4">Congrats!!</h2>
-              <p className="text-lg">
+            <div className="bg-default p-8 rounded-lg shadow-lg text-center">
+              <h2 className="mb-4">Congrats!!</h2>
+              <p className="text-default">
                 You've completed the quiz on water sustainability!
               </p>
             </div>

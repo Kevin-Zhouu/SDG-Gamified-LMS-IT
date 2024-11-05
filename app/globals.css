@@ -9,7 +9,7 @@
     --btn-background-hover: 200 10% 89%;
     --foreground: 200 50% 3%;
   }
-
+ 
   @media (prefers-color-scheme: dark) {
     :root {
       --background: 200 50% 3%;
@@ -18,10 +18,131 @@
       --foreground: 200 20% 96%;
     }
   }
+
+  * {
+    @apply text-neutral-950 dark:text-neutral-50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  h1 {
+    @apply text-4xl font-semibold mb-6;
+  }
+ 
+  h2 {
+    @apply text-3xl font-semibold mb-4;
+  }
+ 
+  h3 {
+    @apply text-2xl font-semibold mb-3;
+  }
+ 
+  h4 {
+    @apply text-xl font-medium mb-3;
+  }
+ 
+  h5 {
+    @apply text-lg font-medium mb-2;
+  }
+ 
+  h6 {
+    @apply text-base font-semibold mb-1;
+  }
+ 
+  p {
+    @apply text-base font-normal;
+  }
+
+  .caption {
+    @apply text-xs font-normal mt-2 text-subtler;
+  }
 }
 
-@layer base {
-  * {
-    @apply border-foreground/20;
+@layer components {
+  /* Base button styles */
+  .btn {
+    @apply px-5 py-2 rounded-full font-medium transition-all duration-200
+           inline-flex items-center justify-center gap-2
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Primary Button */
+  .btn-primary {
+    @apply btn bg-blue-300 text-default
+           hover:bg-blue-500 hover:text-white
+           active:bg-blue-800
+           disabled:bg-blue-300;
+  }
+
+  /* Secondary Button */
+  .btn-secondary {
+    @apply btn
+           bg-gray-200 text-gray-900
+           hover:bg-gray-300
+           active:bg-gray-400
+           disabled:bg-gray-100;
+  }
+
+  /* Outline Button */
+  .btn-outline {
+    @apply btn
+           border-2 border-blue-500 text-blue-500
+           hover:bg-blue-50
+           active:bg-blue-100
+           disabled:border-blue-300 disabled:text-blue-300;
+  }
+
+  /* Ghost Button */
+  .btn-ghost {
+    @apply btn
+           text-default
+           hover:bg-blue-100 hover:text-blue-600
+           active:bg-blue-100
+           disabled:text-blue-300;
+  }
+
+  /* Button size variations */
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-lg;
+  }
+}
+
+@layer utilities {
+  .text-default {
+    @apply text-neutral-900 dark:text-neutral-100;
+  }
+ 
+  .text-subtle {
+    @apply text-neutral-700 dark:text-neutral-300;
+  }
+ 
+  .text-subtler {
+    @apply text-neutral-500 dark:text-neutral-400;
+  }
+ 
+  .text-subtlest {
+    @apply text-neutral-400 dark:text-neutral-500;
+  }
+
+  .text-inverse {
+    @apply text-neutral-50 dark:text-neutral-900;
+  }
+ 
+  .bg-default {
+    @apply bg-neutral-50 dark:bg-neutral-900;
+  }
+ 
+  .bg-surface {
+    @apply bg-neutral-100 dark:bg-neutral-800;
+  }
+ 
+  .border-outline {
+    @apply border-neutral-200 dark:border-neutral-700;
   }
 }

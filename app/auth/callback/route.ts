@@ -11,9 +11,34 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.exchangeCodeForSession(code);
+    console.log("User:", user);
+    if (!error && user) {
+      // Check if user has a profile
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select()
+        .eq("id", user.id)
+        .single();
+
+      if (!profile && !profileError) {
+        // Create a new profile
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({ id: user.id, role: "user" });
+
+        if (insertError) {
+          console.error("Error creating profile:", insertError);
+        } else {
+          console.log("Profile created successfully");
+        }
+      }
+    }
   }
 
-  // URL to redirect to after sign up process completes
-  return NextResponse.redirect(`${origin}/protected`);
+  // URL to redirect to after sign in process completes
+  return NextResponse.redirect(`${origin}/`);
 }
