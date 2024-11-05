@@ -39,7 +39,7 @@ const NewsCarousel = ({ articles }: NewsCarouselProps) => {
       {/* Left Arrow Button */}
       <button
         onClick={prevPage}
-        className="absolute left-0 z-10 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded-full"
+        className="btn-secondary absolute left-0 z-10"
       >
         ◀
       </button>
@@ -68,7 +68,7 @@ const NewsCarousel = ({ articles }: NewsCarouselProps) => {
       {/* Right Arrow Button */}
       <button
         onClick={nextPage}
-        className="absolute right-0 z-10 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded-full"
+        className="absolute right-0 z-10 btn-secondary"
       >
         ▶
       </button>

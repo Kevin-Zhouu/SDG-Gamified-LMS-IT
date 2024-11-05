@@ -1,39 +1,35 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
-export async function getUserRole(supabase: SupabaseClient): Promise<string | null> {
+export async function getUserRole(supabase: SupabaseClient) {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+   
+    if (userError) throw userError;
     if (!user) return null;
 
-    // First, try to get the role from the profiles table
-    let { data, error } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    // Try to get role from profiles first
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id);
 
-    if (error) {
-      console.error("Error fetching from profiles:", error);
-      
-      // If there's an error with profiles, try the user_roles table
-      ({ data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .single());
-
-      if (error) {
-        console.error("Error fetching from user_roles:", error);
-        return null;
-      }
+    if (!profileError && profiles && profiles.length > 0) {
+      return profiles[0].role;
     }
 
-    return data?.role || null;
+    // If no profile found, try user_roles table
+    const { data: userRoles, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    if (!roleError && userRoles && userRoles.length > 0) {
+      return userRoles[0].role;
+    }
+
+    return 'user';
   } catch (error) {
-    console.error("Error fetching user role:", error);
-    return null;
+    console.error('Error getting user role:', error);
+    return 'user';
   }
 }

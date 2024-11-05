@@ -1,172 +1,113 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
+import { getUserRole } from "@/utils/getUserRole";
 
 const ProfileSettings: React.FC = () => {
-  const [profileName, setProfileName] = useState("");
-  const [bio, setBio] = useState("");
-  const [profilePicture, setProfilePicture] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
+  const [message, setMessage] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
   const supabase = createClient();
+  const router = useRouter();
+  
+  const isAdmin = userRole === "admin";
 
   useEffect(() => {
-    const fetchProfileData = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+      } else {
         setUser(user);
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-        if (error) {
-          console.error("Error fetching profile:", error);
-        } else {
-          setProfileName(data.full_name);
-          setProfilePicture(data.profile_picture);
-          setBio(data.bio);
-        }
+        setEmail(user.email || "");
+        const role = await getUserRole(supabase);
+        setUserRole(role);
       }
     };
-    fetchProfileData();
-  }, [supabase]);
-
-  const handleProfileUpdate = async () => {
+    fetchUser();
+  }, [supabase, router]);
+  
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: profileName,
-          bio: bio,
-        })
-        .eq("id", user.id);
+      const resetEmail = isAdmin ? email : user.email;
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
+
       if (error) {
-        console.error("Error updating profile:", error);
+        setMessage("Failed to send password reset email. Please try again.");
       } else {
-        alert("Profile updated successfully!");
+        setMessage("Password reset email sent! Please check the inbox.");
       }
     } catch (error) {
-      console.error("Unexpected error:", error);
+      setMessage("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const toggleEditMode = () => {
-    setIsEditing(!isEditing);
-  };
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen w-full bg-gray-100">
-      {/* Sidebar */}
-      <div className="w-64 bg-default p-6 border-r stroke-outline">
-        <h4>Settings</h4>
-        <ul>
-          <li className="mb-4 bg-blue-100 p-3 rounded-lg font-semibold flex items-center">
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
-            </svg>
-            Profile
-          </li>
-          <li className="mb-4 p-3 hover:bg-gray-100 rounded-lg flex items-center">
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-            </svg>
-            Account
-          </li>
-          <li className="mb-4 p-3 hover:bg-gray-100 rounded-lg flex items-center">
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-            </svg>
-            Notification
-          </li>
-        </ul>
-      </div>
-
-      {/* Main content */}
       <div className="flex-1 p-10 bg-surface">
-        <div className="max-w-2xl mx-auto p-8 rounded-lg bg-default shadow-md">
-          <h3 className="flex items-center">
-            <svg
-              className="w-6 h-6 mr-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
-            </svg>
-            Profile
-          </h3>
-          <div className="mb-6 flex flex-col items-center">
-            {!isEditing && (
-              <Image
-                src={profilePicture || "/placeholder-avatar.png"}
-                alt="Profile"
-                width={100}
-                height={100}
-                className="rounded-full mb-2"
-              />
+        <div className="max-w-md mx-auto p-8 rounded-lg bg-default shadow-md">
+          <h3 className="text-2xl font-bold mb-6 text-center">Reset Password</h3>
+          
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            {isAdmin ? (
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="user@email.com"
+                />
+              </div>
+            ) : (
+              <div className="text-center mb-4 text-gray-600">
+                {user.email}
+              </div>
             )}
+
             <button
-              className="text-blue-500 font-semibold hover:text-blue-600"
-              onClick={toggleEditMode}
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isEditing ? "Change Picture" : "Edit Profile"}
+              {isLoading ? "Sending Reset Link..." : "Send Password Reset Link"}
             </button>
-          </div>
-          <div className="mb-4">
-            <label
-              className="block text-subtle text-sm font-semibold mb-2"
-              htmlFor="profileName"
-            >
-              Profile Name
-            </label>
-            <input
-              id="profileName"
-              type="text"
-              value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
-              className="shadow appearance-none border rounded w-full px-4 py-2 text-subtlest leading-tight focus:outline-none focus:shadow-outline"
-              placeholder="Profile Name"
-            />
-          </div>
-          <div className="mb-6">
-            <label
-              className="block text-subtle text-sm font-semibold mb-2"
-              htmlFor="bio"
-            >
-              Bio
-            </label>
-            <textarea
-              id="bio"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              className="shadow appearance-none border rounded w-full px-4 py-2 text-subtlest leading-tight focus:outline-none focus:shadow-outline"
-              rows={3}
-              placeholder="Text"
-            />
-          </div>
-          <button
-            onClick={handleProfileUpdate}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-600 transition"
-          >
-            Save Changes
-          </button>
+          </form>
+
+          {message && (
+            <div className={`mt-4 p-4 rounded-md ${
+              message.includes("Failed") || message.includes("error")
+                ? "bg-red-50 text-red-700"
+                : "bg-green-50 text-green-700"
+            }`}>
+              {message}
+            </div>
+          )}
+          
+          {isAdmin && (
+            <p className="mt-4 text-sm text-gray-500 text-center">
+              Admin mode: You can reset password for any user
+            </p>
+          )}
         </div>
       </div>
     </div>

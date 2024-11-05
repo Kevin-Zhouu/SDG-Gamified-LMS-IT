@@ -22,9 +22,7 @@ export const EventsCard: React.FC<EventsCardProps> = ({ imgSrc, title, date, hre
                 <h3 className="self-stretch text-center text-black text-xl font-medium font-['Poppins'] leading-normal">{title}</h3>
                 <p className="self-stretch text-center text-black text-sm font-normal font-['Poppins'] leading-[18px]">{date}</p>
             </div>
-            <button className="h-8 px-4 py-4 bg-[#CCE0FF] rounded-full justify-center items-center inline-flex 
-                text-black text-center text-sm font-normal font-['Poppins'] leading-tight 
-                hover:bg-[#85B8FF] hover:text-white">
+            <button className="btn-outline btn-sm">
                 {href && <a href={href} target="_blank" rel="noopener noreferrer">Learn More</a>}
             </button>
     </div>

@@ -4,6 +4,9 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import ModulePlayer from "@/components/modulePlayer/ModulePlayer";
 import { Section, HeaderData } from "@/types/sections";
+import Footer from "@/components/Footer";
+
+
 
 interface PlayModuleProps {
   params: {
@@ -75,38 +78,69 @@ const PlayModule: React.FC<PlayModuleProps> = ({ params: { module_id } }) => {
             .select("module_id, title, subtitle, sdg_id, order_id")
             .eq("module_id", module_id)
             .single();
-
+  
           if (moduleError) throw moduleError;
           setModule(moduleData);
-
-          // Fetch next module
-          try {
-            const { data: nextModule, error } = await supabase
-              .from("module")
-              .select("module_id")
-              .eq("sdg_id", moduleData.sdg_id)
-              .gt("order_id", moduleData.order_id)
-              .order("order_id", { ascending: true })
-              .limit(1)
-              .single();
-          
-            if (error && error.code !== 'PGRST116') {
-              console.error("Error fetching next module:", error);
+  
+          // First, check if a header already exists
+          const { data: existingHeader, error: headerCheckError } = await supabase
+            .from("section")
+            .select("*")
+            .eq("module_id", module_id)
+            .eq("section_type", "header")
+            .maybeSingle();
+  
+          if (headerCheckError) throw headerCheckError;
+  
+          // Only create header if none exists
+          if (!existingHeader) {
+            // Create a clean header without news-related fields
+            const { error: headerError } = await supabase
+              .from("section")
+              .insert({
+                module_id: module_id,
+                order_id: 0,
+                title: 'Module Header',
+                section_type: 'header',
+                data: {
+                  mainTitle: moduleData.title,
+                  mainSubtitle: moduleData.subtitle || 'Learn and explore',
+                  backgroundColor: 'bg-blue-500',
+                  definitionTitle: 'About This Module',
+                  definitionPara: 'Explore and learn about important concepts'
+                }
+              });
+  
+            if (headerError && headerError.code !== '23505') {
+              throw headerError;
             }
-            setNextModuleId(nextModule?.module_id || null);
-          } catch (error) {
-            console.error("Unexpected error fetching next module:", error);
-            setNextModuleId(null);
+          } else {
+            // Clean up existing header by only keeping the fields we want
+            const cleanedData = {
+              mainTitle: existingHeader.data.mainTitle,
+              mainSubtitle: existingHeader.data.mainSubtitle,
+              backgroundColor: existingHeader.data.backgroundColor,
+              definitionTitle: existingHeader.data.definitionTitle,
+              definitionPara: existingHeader.data.definitionPara
+            };
+  
+            const { error: updateError } = await supabase
+              .from("section")
+              .update({ data: cleanedData })
+              .eq("section_id", existingHeader.section_id);
+  
+            if (updateError) throw updateError;
           }
-
+  
+          // Now fetch all sections including the header
           const { data: sectionsData, error: sectionsError } = await supabase
             .from("section")
             .select("section_id, order_id, title, section_type, data")
             .eq("module_id", module_id)
             .order("order_id", { ascending: true });
-
+  
           if (sectionsError) throw sectionsError;
-
+  
           const formattedSections: Section[] = sectionsData.map((section: any) => ({
             id: section.section_id,
             title: section.title,
@@ -114,28 +148,7 @@ const PlayModule: React.FC<PlayModuleProps> = ({ params: { module_id } }) => {
             type: section.section_type as Section['type'],
             data: section.data,
           }));
-
-          // Add header section if it doesn't exist
-          if (!formattedSections.some(section => section.type === 'header')) {
-            const headerSection: Section = {
-              id: 'header',
-              title: 'Module Introduction',
-              order_id: 0,
-              type: 'header',
-              data: {
-                newsTitle: 'Module News',
-                newsContent: 'Latest updates for this module',
-                mainTitle: moduleData.title,
-                mainSubtitle: moduleData.subtitle || 'Learn and explore',
-                backgroundColor: 'bg-blue-500',
-                newsBannerColor: 'bg-yellow-300',
-                definitionTitle: 'About This Module',
-                definitionPara: 'Explore and learn about important concepts',
-              } as HeaderData,
-            };
-            formattedSections.unshift(headerSection);
-          }
-
+  
           setSections(formattedSections);
           setIsLoading(false);
         } catch (error) {
@@ -207,7 +220,7 @@ const PlayModule: React.FC<PlayModuleProps> = ({ params: { module_id } }) => {
   }
 
   return (
-    <div className="relative">
+    <div className="min-h-screen flex flex-col">
       {showCompletionOverlay && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="p-8 bg-white rounded-lg shadow-lg text-center">
@@ -218,20 +231,25 @@ const PlayModule: React.FC<PlayModuleProps> = ({ params: { module_id } }) => {
           </div>
         </div>
       )}
-      <ModulePlayer
-        modules={{
-          module_id: module.module_id,
-          title: module.title,
-          subtitle: module.subtitle ?? "",
-          sdg_id: module.sdg_id.toString(),
-          order_id: module.order_id,
-        }}
-        sections={sections}
-        sectionsRef={sectionsRef}
-        onComplete={handleMarkAsComplete}
-        moduleTitle={module.title}
-        nextModuleId={nextModuleId}
-      />
+      
+      {/* Removed unnecessary padding and margins */}
+      <div className="flex-1">
+        <ModulePlayer
+          modules={{
+            module_id: module.module_id,
+            title: module.title,
+            subtitle: module.subtitle ?? "",
+            sdg_id: module.sdg_id.toString(),
+            order_id: module.order_id,
+          }}
+          sections={sections}
+          sectionsRef={sectionsRef}
+          onComplete={handleMarkAsComplete}
+          moduleTitle={module.title}
+          nextModuleId={nextModuleId}
+        />
+      </div>
+
       {nextModuleId && (
         <div className="fixed bottom-4 right-4">
           <button
@@ -242,6 +260,7 @@ const PlayModule: React.FC<PlayModuleProps> = ({ params: { module_id } }) => {
           </button>
         </div>
       )}
+      <Footer />
     </div>
   );
 };

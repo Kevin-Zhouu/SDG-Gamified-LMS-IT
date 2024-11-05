@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { CheckCircle, ChevronRight } from "lucide-react";
+import Footer from "@/components/Footer";
 
 // Define types
 interface User {
@@ -132,37 +133,19 @@ export default function SdgDetail({ params: { slug } }: { params: { slug: string
       }}
     >
       {/* Header */}
-      <header className="sticky top-0 z-[901] h-16 bg-white">
-        <div
-          className="h-full px-6 flex items-center justify-between"
-          style={{ color: "rgb(40, 46, 62)" }}
-        >
-          <div className="flex items-center">
+      <header className="h-16 bg-white">
+        <div className="h-full px-6 grid grid-cols-3 items-center">
+          <div>
             <span className="text-lg font-semibold">
               {"SDG " + sdg?.sdg_display_id || "SDG"}
             </span>
-            <svg
-              className="w-4 h-4 ml-1 text-[#939bb4]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
           </div>
-          <h1 className="text-[16px] font-semibold cursor-pointer absolute left-1/2 transform -translate-x-1/2">
-            {sdg?.title || "Clean Water and Sanitation"}
-          </h1>
-          <div className="flex items-center">
-            <button className="px-3 py-1 bg-gray-100 rounded-md text-sm mr-2">
-              Options
-            </button>
+          <div className="text-center">
+            <h1 className="text-[16px] font-semibold mb-0">
+              {sdg?.title || "Clean Water and Sanitation"}
+            </h1>
+          </div>
+          <div className="flex justify-end">
             <button
               className="p-1 bg-gray-100 rounded-md"
               onClick={() => router.push("/")}
@@ -314,6 +297,7 @@ export default function SdgDetail({ params: { slug } }: { params: { slug: string
           }
         }
       `}</style>
+      <Footer />
     </div>
   );
 }

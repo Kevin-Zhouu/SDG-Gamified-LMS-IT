@@ -1,7 +1,10 @@
 "use client";
 import React from "react";
 import Wave from "react-wavify";
+import Image from "next/image";
+
 const progress = 50;
+
 const MedicalTerminologyQuizUI = () => {
   return (
     <div className="min-h-screen flex font-sans text-[16px] leading-[26px] bg-[#F6F7FB]">
@@ -11,9 +14,13 @@ const MedicalTerminologyQuizUI = () => {
         style={{ backgroundColor: "rgb(44, 186, 223)" }}
       >
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
-          <img
-            src="https://www.pngegg.com/en/png-nllmb/download"
+          {/* Replaced img with Next.js Image component */}
+          <Image
+            src="/api/placeholder/80/48" // Replace with your actual image path
             alt="Logo"
+            width={80}
+            height={48}
+            priority // Add priority since this is above the fold
             className="w-20 h-12"
           />
         </div>
@@ -54,8 +61,7 @@ const MedicalTerminologyQuizUI = () => {
             style={{ height: `${progress}%` }}
           >
             <Wave
-              fill="
-              rgba(1, 83, 121, 0.8)"
+              fill="rgba(1, 83, 121, 0.8)"
               paused={false}
               options={{
                 height: 10,

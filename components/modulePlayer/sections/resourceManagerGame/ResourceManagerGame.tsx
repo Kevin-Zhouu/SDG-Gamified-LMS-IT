@@ -1,5 +1,4 @@
-// CombinedResourceManagerGameSection.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { ResourceManagerGameSection as ResourceManagerGameSectionType } from "@/types/sections";
 
 interface Option {
@@ -28,7 +27,8 @@ const CombinedResourceManagerGameSection: React.FC<
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
   const [gameState, setGameState] = useState<string>("intro");
 
-  const events: Event[] = [
+  // Move events array into useMemo to prevent recreation on every render
+  const events = useMemo<Event[]>(() => [
     {
       title: "Water Scarcity",
       description: "The city is facing a severe water shortage.",
@@ -48,18 +48,17 @@ const CombinedResourceManagerGameSection: React.FC<
       ],
     },
     // Additional events can be added here
-  ];
+  ], []); // Empty dependency array since events are static
 
   useEffect(() => {
     if (gameState === "playing") {
       if (cityHealth <= 0 || resources <= 0) {
         setGameState("gameOver");
-        // section.onComplete(); // Trigger onComplete when the game ends
       } else if (!currentEvent) {
         setCurrentEvent(events[Math.floor(Math.random() * events.length)]);
       }
     }
-  }, [gameState, cityHealth, resources, currentEvent, section]);
+  }, [gameState, cityHealth, resources, currentEvent, events]);
 
   const handleOption = (option: Option) => {
     setCityHealth(Math.min(100, Math.max(0, cityHealth + option.healthEffect)));

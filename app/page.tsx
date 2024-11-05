@@ -1,11 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Bell, User, Menu, Check, PlayCircle, Lock } from "lucide-react";
+import { Bell, User, Menu, Check, PlayCircle, Lock, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import NewsCard from "@/components/NewsCard";
 import NewsCarousel from "@/components/NewsCarousel";
 import SDGGrid from "@/components/SDGGrid";
 import { createClient } from "@/utils/supabase/client";
+import { getUserRole } from "@/utils/getUserRole";
+import Link from "next/link";
+import Footer from "@/components/Footer";
+import { Trash2 } from 'lucide-react';
+import DeleteModal from '@/components/DeleteModal';
 
 interface Article {
   title: string;
@@ -29,11 +34,19 @@ interface UserSdgProgress {
 export default function Index() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [sdgs, setSdgs] = useState<SDG[]>([]);
   const [userSdgProgress, setUserSdgProgress] = useState<UserSdgProgress[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
+  const isAdmin = userRole === "admin";
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [sdgToDelete, setSdgToDelete] = useState<{ id: number; title: string } | null>(null);
+
 
   const sdgGoals = [
     { number: 1, title: 'No Poverty', description: 'End poverty in all its forms everywhere.' },
@@ -61,19 +74,89 @@ export default function Index() {
     description: 'Ensure availability and sustainable management of water and sanitation for all.',
   });
 
-  useEffect(() => {
-    const fetchUserData = async () => {
+  const handleDeleteSDG = async (sdgId: number) => {
+    try {
+      const { error } = await supabase
+        .from('sdgs')
+        .delete()
+        .eq('sdg_id', sdgId);
+  
+      if (error) throw error;
+      
+      // Refresh the SDGs list
+      fetchSdgs();
+      setIsDeleteModalOpen(false);
+      setSdgToDelete(null);
+    } catch (error) {
+      console.error('Error deleting SDG:', error);
+    }
+  };
+
+
+  const fetchUserSdgProgress = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("usersdgprogress")
+        .select('sdg_id, progress')
+        .eq("user_id", userId);
+  
+      if (error) {
+        console.error("Error fetching user SDG progress:", error);
+        return;
+      }
+  
+      if (data) {
+        setUserSdgProgress(data.map(item => ({
+          sdg_id: item.sdg_id,
+          progress: item.progress || 'todo'
+        })));
+      }
+    } catch (error) {
+      console.error("Error in fetchUserSdgProgress:", error);
+    }
+  };
+
+// Modify the useEffect in the Index component
+useEffect(() => {
+  const fetchUserData = async () => {
+    try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        fetchSdgs();
-        fetchUserSdgProgress(user.id);
+        
+        // Fetch SDGs first
+        const sdgsResponse = await fetch('/api/sdgs');
+        if (sdgsResponse.ok) {
+          const sdgsData = await sdgsResponse.json();
+          setSdgs(sdgsData);
+        }
+
+        // Fetch user progress
+        const { data: progressData, error } = await supabase
+          .from("usersdgprogress")
+          .select('sdg_id, progress')
+          .eq("user_id", user.id);
+
+        if (!error && progressData) {
+          setUserSdgProgress(progressData.map(item => ({
+            sdg_id: item.sdg_id,
+            progress: item.progress || 'todo'
+          })));
+        }
+
+        // Get user role
+        const role = await getUserRole(supabase);
+        setUserRole(role);
       } else {
         router.push("/login");
       }
-    };
-    fetchUserData();
-  }, []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  fetchUserData();
+}, [supabase, router]); // Remove fetchUserSdgProgress from dependencies
 
   useEffect(() => {
     const fetchSDGNews = async () => {
@@ -103,18 +186,7 @@ export default function Index() {
     }
   };
 
-  const fetchUserSdgProgress = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("usersdgprogress")
-      .select("*")
-      .eq("user_id", userId);
 
-    if (error) {
-      console.error("Error fetching user SDG progress:", error);
-    } else {
-      setUserSdgProgress(data);
-    }
-  };
 
   const getSdgProgress = (sdgId: number): 'todo' | 'doing' | 'done' => {
     const progress = userSdgProgress.find((p) => p.sdg_id === sdgId);
@@ -133,56 +205,20 @@ export default function Index() {
   return (
     <div className="flex flex-col h-screen bg-default md:flex-row">
       {/* Mobile menu button */}
+      {/* Do we still need this if we don't have sidebar anymore */}
       <button
         className="md:hidden fixed top-4 left-4 z-20 p-2 bg-surface rounded-md shadow-md"
         onClick={() => setSidebarOpen(!sidebarOpen)}
       >
         <Menu className="h-6 w-6" />
       </button>
-      
-      {/* Sidebar */}
-      <aside
-        className={`${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 transition-transform duration-300 fixed md:static inset-y-0 left-0 z-10 w-64 bg-surface shadow-md overflow-y-auto md:block`}
-      >
-        <div className="p-4">
-          <div className="flex items-center space-x-2 mb-6">
-            <User className="h-6 w-6" />
-            <span className="font-semibold">Profile</span>
-          </div>
-          <nav>
-            {[
-              "Dashboard",
-              "SDG",
-              "Achievements",
-              "Ask for Help",
-              "Resources",
-              "Videos",
-              "Profile settings",
-            ].map((item, index) => (
-              <a
-                key={index}
-                href="#"
-                className={`block py-2 px-4 rounded ${
-                  index === 0
-                    ? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300"
-                    : "text-subtle hover:bg-surface"
-                }`}
-              >
-                {item}
-              </a>
-            ))}
-          </nav>
-        </div>
-      </aside>
-
       {/* Main content */}
       <main className="flex-1 overflow-y-auto p-8 md:ml-0">
+     
         {/* Hero Section */}
-        <div className="mb-6">
+        <div id="Dashboard" className="mb-6">
           <h1>Sustainable Development Goals</h1>
-          <div className="bg-sdg-6 p-4 rounded-lg flex flex-row gap-8">
+          <div className="bg-blue-800 p-4 rounded-lg flex flex-row gap-8">
             <div className="w-[600px]">
               <SDGGrid onSelectGoal={handleSelectGoal} />
             </div>
@@ -195,21 +231,16 @@ export default function Index() {
               <h3 className="text-inverse">{selectedGoal.title}</h3>
               <p className="text-inverse max-w-[500px]">{selectedGoal.description}</p>
               <div className="flex flex-row justify-end">
-                <button className="btn-primary">
-                  <span>Learn more</span>
-                  <img
-                    src="./icon_chevron-right.svg"
-                    alt="right facing chevron icon"
-                    className="w-4 h-4"
-                  />
-                </button>
+                {/* <button className="btn-primary">
+                  Learn more
+                </button> */}
               </div>
             </div>
           </div>
         </div>
 
         {/* Module Progress */}
-        <div className="mb-8 overflow-x-auto">
+        {/* <div className="mb-8 overflow-x-auto">
           <div className="flex justify-between items-center mb-2 min-w-max">
             <div className="text-subtler">Newbie</div>
             <div className="text-default">Master</div>
@@ -217,67 +248,91 @@ export default function Index() {
           <div className="h-2 bg-surface rounded-full">
             <div className="h-full w-1/2 bg-sdg-6 rounded-full"></div>
           </div>
-        </div>
+        </div> */}
 
         {/* SDG Modules */}
-        <div className="py-8">
+        <div id="SDG" className="py-8">
           <h2>Goals</h2>
+          {isAdmin && (
+          <div className="mb-6">
+            <Link
+              href="/builder"
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Add New SDG
+            </Link>
+          </div>
+        )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sdgs.map((sdg) => {
-              const progress = getSdgProgress(sdg.sdg_id);
-              return (
-                <div
-                  key={sdg.sdg_id}
-                  className={`relative bg-surface rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer ${
-                    progress === 'doing' ? "opacity-75" : ""
-                  }`}
-                  onClick={() => !progress.includes('doing') && router.push(`/sdg/${sdg.sdg_id}`)}
-                >
-                  <div className="p-4 flex items-start">
-                    <div 
-                      className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 text-inverse`}
-                      style={{ backgroundColor: `var(--sdg-${sdg.sdg_id})` }}
-                    >
-                      {sdg.sdg_display_id}
-                    </div>
-                    <div className="flex-grow">
-                      <h6>{sdg.title}</h6>
-                      <p className="caption">{sdg.description}</p>
-                    </div>
-                    <div className="ml-2 flex-shrink-0">
-                      {progress === 'done' && <Check className="h-5 w-5 text-green-500" />}
-                      {progress === 'doing' && <PlayCircle className="h-5 w-5 text-blue-500" />}
-                    </div>
+            
+          {sdgs.map((sdg) => {
+            const progress = getSdgProgress(sdg.sdg_id);
+            return (
+              <div
+                key={sdg.sdg_id}
+                className={`relative bg-surface rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer ${
+                  progress === 'doing' ? "opacity-75" : ""
+                }`}
+              >
+                <div className="p-4 flex items-start">
+                  <div 
+                    className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 text-inverse`}
+                    style={{ backgroundColor: `var(--sdg-${sdg.sdg_id})` }}
+                  >
+                    {sdg.sdg_display_id}
                   </div>
-                  {progress === 'doing' && (
-                    <div className="absolute inset-0 bg-neutral-900/80 flex items-center justify-center">
-                      <Lock className="h-8 w-8 text-inverse" />
-                    </div>
-                  )}
+                  <div 
+                    className="flex-grow"
+                    onClick={() => !progress.includes('doing') && router.push(`/sdg/${sdg.sdg_id}`)}
+                  >
+                    <h6>{sdg.title}</h6>
+                    <p className="caption">{sdg.description}</p>
+                  </div>
+                  <div className="ml-2 flex-shrink-0 flex items-center">
+                    {progress === 'done' && <Check className="h-5 w-5 text-green-500" />}
+                    {progress === 'doing' && <PlayCircle className="h-5 w-5 text-blue-500" />}
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSdgToDelete({ id: sdg.sdg_id, title: sdg.title });
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              );
-            })}
+                {progress === 'doing' && (
+                  <div className="absolute inset-0 bg-neutral-900/80 flex items-center justify-center">
+                    <Lock className="h-8 w-8 text-inverse" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
           </div>
         </div>
 
         {/* Daily News */}
-        <div className="bg-sdg-6 p-4 mb-6 rounded-lg">
-          <h4 className="flex items-center text-inverse">
-            <Bell className="h-5 w-5 mr-2" />
-            Daily News
-          </h4>
-          <p className="text-inverse">
+        <div className="mb-4 pb-4">
+          <h2>Daily News</h2>
+          <p>
             Keep up to date with the latest news on Sustainable Development
             Goals. Check out the latest articles, events, and updates related to
             the SDGs!
           </p>
         </div>
 
+
         {/* News Carousel Section */}
         {articles.length > 0 ? (
           <NewsCarousel articles={articles} />
         ) : (
-          <div className="flex flex-row justify-center items-start h-[360px] px-6 py-4 gap-8">
+          <div className="flex flex-row justify-center items-start h-[360px] px-6 py-4 gap-8 mb-4">
             <NewsCard 
               img="/EVAC-header-desktop.jpg"
               title="End Child Violence"
@@ -297,6 +352,18 @@ export default function Index() {
               href="https://www.globalgoals.org/news/what-are-the-global-goals/"
             />
           </div>
+        )}
+        <Footer />
+        {sdgToDelete && (
+          <DeleteModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => {
+              setIsDeleteModalOpen(false);
+              setSdgToDelete(null);
+            }}
+            onConfirm={() => handleDeleteSDG(sdgToDelete.id)}
+            sdgTitle={sdgToDelete.title}
+          />
         )}
       </main>
     </div>

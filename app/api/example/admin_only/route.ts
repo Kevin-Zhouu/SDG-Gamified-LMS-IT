@@ -24,9 +24,15 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { title, description, sdg_display_id, modules } = body as SDG;
-
+    console.log("Received body:", body);
     // Validate input
-    if (!title || !description || !sdg_display_id || !modules) {
+    if (
+      !title ||
+      !description ||
+      sdg_display_id === null ||
+      sdg_display_id === undefined ||
+      !modules
+    ) {
       return NextResponse.json(
         { error: "All fields are required" },
         { status: 400 }
@@ -34,6 +40,7 @@ export async function POST(request: Request) {
     }
 
     try {
+      console.log("Inserting SDG:", body);
       // Insert SDG
       const { data: sdg, error: sdgError } = await supabase
         .from("sdgs")
@@ -61,6 +68,7 @@ export async function POST(request: Request) {
 
         // Insert sections for each learning module
         if (learningModule.sections && learningModule.sections.length > 0) {
+          console.log("Inserting sections for module", learningModule);
           const sectionsToInsert = learningModule.sections.map(
             (section: Section) => ({
               module_id: moduleData.module_id,
@@ -80,7 +88,11 @@ export async function POST(request: Request) {
       }
 
       return NextResponse.json(
-        { message: "SDG created successfully" },
+        { message: "SDG created successfully",
+          data:{
+            sdg_id: sdg.sdg_id,
+          }
+         },
         { status: 201 }
       );
     } catch (error) {

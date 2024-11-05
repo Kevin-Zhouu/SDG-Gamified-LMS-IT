@@ -1,13 +1,9 @@
 import { ReactNode } from "react";
 
 export interface HeaderData {
-  newsTitle: string;
-  newsContent: string;
   mainTitle: string;
   mainSubtitle: string;
-  backgroundColor?: string;
-  newsBannerColor?: string;
-  illustrationComponent?: ReactNode | string;
+  backgroundColor: string;
   definitionTitle: string;
   definitionPara: string;
 }
