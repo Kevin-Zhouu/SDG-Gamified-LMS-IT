@@ -301,9 +301,15 @@ const AdminBuilder: React.FC = () => {
         },
         body: JSON.stringify(sdgData),
       });
+      
       const result = await response.json();
+      
       if (response.ok) {
-        window.open(`/sdg/${result.data.sdg_id}`, '_blank');
+        
+        // Sign out the user
+        await supabase.auth.signOut();
+        
+        // Redirect to home page
         window.location.href = '/';
       } else {
         throw new Error(result.error || 'Failed to save SDG');

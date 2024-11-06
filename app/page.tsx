@@ -116,47 +116,58 @@ export default function Index() {
     }
   };
 
-// Modify the useEffect in the Index component
-useEffect(() => {
-  const fetchUserData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        
-        // Fetch SDGs first
-        const sdgsResponse = await fetch('/api/sdgs');
-        if (sdgsResponse.ok) {
-          const sdgsData = await sdgsResponse.json();
-          setSdgs(sdgsData);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState({
+    user: false,
+    sdgs: false,
+    progress: false,
+    news: false
+  });
+
+  // Modify the useEffect for user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUser(user);
+          setDataLoaded(prev => ({ ...prev, user: true }));
+          
+          // Fetch SDGs
+          const sdgsResponse = await fetch('/api/sdgs');
+          if (sdgsResponse.ok) {
+            const sdgsData = await sdgsResponse.json();
+            setSdgs(sdgsData);
+            setDataLoaded(prev => ({ ...prev, sdgs: true }));
+          }
+
+          // Fetch user progress
+          const { data: progressData, error } = await supabase
+            .from("usersdgprogress")
+            .select('sdg_id, progress')
+            .eq("user_id", user.id);
+
+          if (!error && progressData) {
+            setUserSdgProgress(progressData.map(item => ({
+              sdg_id: item.sdg_id,
+              progress: item.progress || 'todo'
+            })));
+            setDataLoaded(prev => ({ ...prev, progress: true }));
+          }
+
+          // Get user role
+          const role = await getUserRole(supabase);
+          setUserRole(role);
+        } else {
+          router.push("/login");
         }
-
-        // Fetch user progress
-        const { data: progressData, error } = await supabase
-          .from("usersdgprogress")
-          .select('sdg_id, progress')
-          .eq("user_id", user.id);
-
-        if (!error && progressData) {
-          setUserSdgProgress(progressData.map(item => ({
-            sdg_id: item.sdg_id,
-            progress: item.progress || 'todo'
-          })));
-        }
-
-        // Get user role
-        const role = await getUserRole(supabase);
-        setUserRole(role);
-      } else {
-        router.push("/login");
+      } catch (error) {
+        console.error("Error fetching data:", error);
       }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
+    };
 
-  fetchUserData();
-}, [supabase, router]); // Remove fetchUserSdgProgress from dependencies
+    fetchUserData();
+  }, [supabase, router]);
 
   useEffect(() => {
     const fetchSDGNews = async () => {
